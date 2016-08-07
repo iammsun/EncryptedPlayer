@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">加密播放器</string>
+    <string name="download_title">下载中,请稍后&#8230;</string>
+    <string name="decode_error">解码失败,不支持该文件</string>
+    <string name="download_error">下载失败,请检查网络是否连接</string>
+    <string name="permission_denied">权限错误</string>
+</resources>

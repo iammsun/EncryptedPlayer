@@ -1,0 +1,4 @@
+<resources>
+    <dimen name="action_horizontal_margin">16dp</dimen>
+    <dimen name="height_progress">5dp</dimen>
+</resources>
