@@ -45,7 +45,6 @@ public class Utils {
         try {
             closeable.close();
         } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -55,8 +54,8 @@ public class Utils {
     }
 
     public static boolean permissionCheck(Context context, String... permissions) {
-        for (String permission: permissions) {
-            if(PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(context,
+        for (String permission : permissions) {
+            if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(context,
                     permission)) {
                 return false;
             }

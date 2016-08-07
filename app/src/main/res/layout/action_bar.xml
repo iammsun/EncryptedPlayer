@@ -12,7 +12,7 @@
                   android:layout_height="wrap_content" android:textColor="@android:color/white"
                   tools:text="00:00"/>
         <SeekBar android:id="@+id/progress" android:layout_width="match_parent"
-                 android:layout_height="@dimen/height_progress"
+                 android:layout_height="wrap_content"
                  android:layout_weight="1"/>
         <TextView android:id="@+id/duration_time" android:layout_width="wrap_content"
                   android:layout_height="wrap_content" android:layout_weight="0"
