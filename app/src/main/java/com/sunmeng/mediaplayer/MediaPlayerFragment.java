@@ -1,8 +1,10 @@
 package com.sunmeng.mediaplayer;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -145,8 +147,10 @@ public class MediaPlayerFragment extends Fragment
             }
         });
         mControlPanel = view.findViewById(R.id.control_pannel);
-        mPresenter = new MediaPlayPresenter(getContext(), this);
-        mDownloadPresenter = new DownloadPresenter(getContext(), this);
+        mPresenter = new MediaPlayPresenter(getContext());
+        mPresenter.attachView(this);
+        mDownloadPresenter = new DownloadPresenter(getContext());
+        mDownloadPresenter.attachView(this);
 
         mPlayBtn.setOnClickListener(this);
         mNextBtn.setOnClickListener(this);
@@ -159,40 +163,22 @@ public class MediaPlayerFragment extends Fragment
         }
     }
 
-    private void showProgress(int progress) {
-        switch (progress) {
-            case DownloadTask.ProgressListener.START:
-                if (mProgressDialog != null) {
-                    mProgressDialog.dismiss();
-                }
-                mProgressDialog = new ProgressDialog(getContext());
-                mProgressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-                break;
-            case DownloadTask.ProgressListener.START + 1:
-                if (mProgressDialog != null) {
-                    mProgressDialog.dismiss();
-                }
-                mProgressDialog = new ProgressDialog(getContext());
-                mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-                mProgressDialog.setMax(DownloadTask.ProgressListener.FINISH);
-                break;
-            default:
-                mProgressDialog.setProgress(progress);
-        }
-        mProgressDialog.setTitle(R.string.download_title);
-        mProgressDialog.setCancelable(false);
-        if (!mProgressDialog.isShowing()) {
-            mProgressDialog.show();
-        }
-
-    }
-
     private void hideProgress() {
         if (mProgressDialog == null) {
             return;
         }
         mProgressDialog.dismiss();
         mProgressDialog = null;
+    }
+
+    private void showProgress(int style) {
+        hideProgress();
+        mProgressDialog = new ProgressDialog(getContext());
+        mProgressDialog.setProgressStyle(style);
+        mProgressDialog.setMax(100);
+        mProgressDialog.setTitle(R.string.download_title);
+        mProgressDialog.setCancelable(false);
+        mProgressDialog.show();
     }
 
     @Override
@@ -360,14 +346,16 @@ public class MediaPlayerFragment extends Fragment
     }
 
     @Override
-    public void onDownloadProgress(@IntRange(from = DownloadTask.ProgressListener.START, to =
-            DownloadTask.ProgressListener.FINISH) int progress) {
-        showProgress(progress);
+    public void onDownloadProgress(@IntRange(from = 0, to = 100) int progress) {
+        if (mProgressDialog == null || !mProgressDialog.isShowing() || progress == 0) {
+            showProgress(ProgressDialog.STYLE_HORIZONTAL);
+        }
+        mProgressDialog.setProgress(progress);
     }
 
     @Override
     public void onDownloadStart() {
-        showProgress(0);
+        showProgress(ProgressDialog.STYLE_SPINNER);
     }
 
     @Override
@@ -385,6 +373,13 @@ public class MediaPlayerFragment extends Fragment
         mPath = path;
         Toast.makeText(getContext(), mPath, Toast.LENGTH_SHORT).show();
         initPlayer();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mPresenter.detachView();
+        mDownloadPresenter.detachView();
     }
 
     @Override

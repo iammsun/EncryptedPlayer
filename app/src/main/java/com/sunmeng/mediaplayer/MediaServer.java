@@ -1,8 +1,9 @@
 package com.sunmeng.mediaplayer;
 
-import android.content.Intent;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.sunmeng.mediaplayer.downloader.IEncrypt;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,6 +23,8 @@ public class MediaServer extends Thread {
 
     private static final String TAG = "MediaServer";
 
+    private static final int BUFFER_SIZE = 10 * 1024 * 1024;
+
     public static final int PORT = 12345;
 
     private ServerSocket serverSocket;
@@ -30,7 +33,7 @@ public class MediaServer extends Thread {
 
     private static MediaServer instance;
 
-    public static MediaServer getInstance(IEncrypt encrypt) {
+    public static void init(IEncrypt encrypt) {
         if (instance == null) {
             synchronized (MediaServer.class) {
                 if (instance == null) {
@@ -38,6 +41,9 @@ public class MediaServer extends Thread {
                 }
             }
         }
+    }
+
+    public static MediaServer getInstance() {
         return instance;
     }
 
@@ -122,7 +128,7 @@ public class MediaServer extends Thread {
                 if (seekBegin > 0) {
                     inputStream.skip(seekBegin);
                 }
-                byte[] buffer = new byte[4 * 1024];
+                byte[] buffer = new byte[BUFFER_SIZE];
                 int length;
                 long read = seekBegin;
                 while ((length = inputStream.read(buffer)) != -1) {
@@ -174,6 +180,7 @@ public class MediaServer extends Thread {
     }
 
     private void loop() {
+        Log.d(TAG, "media server is started......");
         while (!Thread.interrupted()) {
             Socket client = null;
             try {

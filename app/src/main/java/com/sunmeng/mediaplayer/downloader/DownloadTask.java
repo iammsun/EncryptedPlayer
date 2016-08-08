@@ -1,39 +1,28 @@
-package com.sunmeng.mediaplayer;
+package com.sunmeng.mediaplayer.downloader;
 
 import android.os.AsyncTask;
-import android.support.annotation.IntRange;
-import android.support.annotation.MainThread;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
 /**
- * Created by sunmeng on 16/8/6.
+ * Created by sunmeng on 16/8/8.
  */
 public class DownloadTask extends AsyncTask<String, Integer, Boolean> {
 
-    public interface ProgressListener {
-
-        int ERROR = -2;
-        int UNKNOWN = -1;
-        int START = 0;
-        int FINISH = 100;
-
-        @MainThread
-        void onProgress(@IntRange(from = ERROR, to = FINISH) int progress);
-    }
+    private static final int BUFFER_SIZE = 10 * 1024 * 1024;
 
     private ProgressListener mProgressListener;
-    private int mProgress;
+    private int mProgress = -1;
     private final IEncrypt encrypt;
 
     public DownloadTask(IEncrypt encrypt) {
         this.encrypt = encrypt;
     }
-
 
     public void setProgressListener(ProgressListener progressListener) {
         mProgressListener = progressListener;
@@ -63,10 +52,14 @@ public class DownloadTask extends AsyncTask<String, Integer, Boolean> {
             URLConnection con = url.openConnection();
             is = con.getInputStream();
             os = new FileOutputStream(target);
-            byte[] buffer = new byte[4 * 1024];
-            int bufLen;
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int bufLen = 0;
             int readLen = 0;
             int contentLen = con.getContentLength();
+            if (contentLen > 0) {
+                readLen += bufLen;
+                publishProgress(readLen, contentLen);
+            }
             if (encrypt != null) {
                 os.write(encrypt.getSignature().getBytes());
             }
@@ -75,16 +68,18 @@ public class DownloadTask extends AsyncTask<String, Integer, Boolean> {
                     buffer = encrypt.encrypt(buffer, 0, bufLen);
                 }
                 os.write(buffer, 0, bufLen);
-                readLen += bufLen;
-                publishProgress(readLen, contentLen);
+                if (contentLen > 0) {
+                    readLen += bufLen;
+                    publishProgress(readLen, contentLen);
+                }
             }
             os.flush();
             return true;
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            Utils.close(os);
-            Utils.close(is);
+            IOUtils.close(os);
+            IOUtils.close(is);
         }
         return false;
     }
@@ -94,8 +89,11 @@ public class DownloadTask extends AsyncTask<String, Integer, Boolean> {
         if (mProgressListener == null) {
             return;
         }
-        mProgress = result ? ProgressListener.FINISH : ProgressListener.ERROR;
-        mProgressListener.onProgress(mProgress);
+        if (result) {
+            mProgressListener.onFinish();
+        } else {
+            mProgressListener.onError(new RuntimeException("failed to download"));
+        }
     }
 
     @Override
@@ -103,8 +101,7 @@ public class DownloadTask extends AsyncTask<String, Integer, Boolean> {
         if (mProgressListener == null) {
             return;
         }
-        mProgress = ProgressListener.START;
-        mProgressListener.onProgress(mProgress);
+        mProgressListener.onStart();
     }
 
     @Override
@@ -114,12 +111,16 @@ public class DownloadTask extends AsyncTask<String, Integer, Boolean> {
         }
         int read = values[0];
         int contentLen = values[1];
-        int current = contentLen == -1 ? ProgressListener.UNKNOWN : (int) ((float) read /
-                contentLen * ProgressListener.FINISH);
+        if (contentLen <= 0) {
+            return;
+        }
+        int current = (int) ((float) read / contentLen * 100);
         if (current == mProgress) {
             return;
         }
         mProgress = current;
-        mProgressListener.onProgress(mProgress);
+        if (mProgress >= 0) {
+            mProgressListener.onProgress(mProgress);
+        }
     }
 }

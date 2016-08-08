@@ -1,4 +1,4 @@
-package com.sunmeng.mediaplayer;
+package com.sunmeng.mediaplayer.downloader;
 
 import android.support.annotation.NonNull;
 

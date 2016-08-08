@@ -1,5 +1,7 @@
 package com.sunmeng.mediaplayer;
 
+import com.sunmeng.mediaplayer.downloader.IEncrypt;
+
 /**
  * Created by sunmeng on 16/8/7.
  */

@@ -12,10 +12,9 @@ public interface IDownloaderView {
 
     void onDownloadStart();
 
-    void onDownloadProgress(@IntRange(from = DownloadTask.ProgressListener.START, to =
-            DownloadTask.ProgressListener.FINISH) int progress);
-
     void onDownloadError();
+
+    void onDownloadProgress(@IntRange(from = 0, to = 100) int progress);
 
     void onDownloadComplete(@NonNull String path);
 }

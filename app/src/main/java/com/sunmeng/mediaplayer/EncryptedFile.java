@@ -2,6 +2,8 @@ package com.sunmeng.mediaplayer;
 
 import android.support.annotation.NonNull;
 
+import com.sunmeng.mediaplayer.downloader.IEncrypt;
+
 import java.io.File;
 import java.io.FileInputStream;
 

@@ -18,28 +18,32 @@ import java.io.PrintWriter;
 /**
  * Created by sunmeng on 16/8/6.
  */
-public class MediaPlayPresenter {
+public class MediaPlayPresenter implements BasePresenter<IPlayerView> {
 
     private static final String TAG = "MediaPlayPresenter";
 
     private IPlayerView mPlayerView;
     private Context mContext;
     private MediaPlayer mPlayer;
-    private MediaServer mediaServer = MediaServer.getInstance(new EncryptImpl());
 
-    public MediaPlayPresenter(@NonNull Context context, @NonNull IPlayerView playerView) {
+    public MediaPlayPresenter(@NonNull Context context) {
         mContext = context;
-        mPlayerView = playerView;
     }
 
     public void initPlayer(@NonNull SurfaceView surfaceView, @NonNull String path) {
         close();
-        if (!mediaServer.isAlive()) {
-            mediaServer.start();
-        }
         MediaPlayer player = null;
         try {
             player = new MediaPlayer();
+            player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    mPlayer = mp;
+                    mPlayerView.onMediaReady(mPlayer.getDuration());
+                    mPlayerView.onResize(mPlayer.getVideoWidth(), mPlayer.getVideoHeight());
+                    playOrPause();
+                }
+            });
             player.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
@@ -54,37 +58,20 @@ public class MediaPlayPresenter {
                     mPlayerView.onMediaComplete();
                 }
             });
-            player.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            player.setDataSource(mContext, Uri.parse("http://localhost:" + mediaServer.getPort() +
-                    "/" + path));
+            player.reset();
+            player.setDataSource(mContext, Uri.parse("http://localhost:" + MediaServer
+                    .getInstance().getPort() + "/" + path));
             player.setDisplay(surfaceView.getHolder());
+            player.setAudioStreamType(AudioManager.STREAM_MUSIC);
             player.setScreenOnWhilePlaying(true);
-            player.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    mPlayer = mp;
-                    mPlayerView.onMediaReady(mPlayer.getDuration());
-                    mPlayerView.onResize(mPlayer.getVideoWidth(), mPlayer.getVideoHeight());
-                    playOrPause();
-                }
-            });
+            player.prepare();
         } catch (Exception e) {
             e.printStackTrace();
             if (player != null) {
-                player.setDisplay(null);
                 player.reset();
                 player.release();
-                player = null;
             }
             mPlayerView.onMediaError();
-        }
-        if (player == null) {
-            return;
-        }
-        try {
-            player.prepareAsync();
-        }catch (IllegalStateException e){
-            e.printStackTrace();
         }
     }
 
@@ -126,13 +113,21 @@ public class MediaPlayPresenter {
         if (mPlayer == null) {
             return;
         }
-        mPlayer.setDisplay(null);
-        mPlayer.reset();
         mPlayer.release();
         mPlayer = null;
     }
 
     public boolean isReady() {
         return mPlayer != null;
+    }
+
+    @Override
+    public void attachView(IPlayerView view) {
+        mPlayerView = view;
+    }
+
+    @Override
+    public void detachView() {
+        close();
     }
 }
